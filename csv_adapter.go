@@ -66,12 +66,12 @@ func (a CSVAdapter) write(e *entry) error {
 }
 
 func (a CSVAdapter) entryToCSV(e *entry) []string {
-	return []string{string(e.command), e.timestamp.Format(time.DateTime)}
+	return []string{string(e.command), e.timestamp.Format(time.RFC822Z)}
 }
 
 func (a CSVAdapter) csvToEntry(line []string) (*entry, error) {
 	cmd := command(line[0])
-	timestamp, err := time.Parse(time.DateTime, line[1])
+	timestamp, err := time.Parse(time.RFC822Z, line[1])
 	if err != nil {
 		return nil, fmt.Errorf("csv to entry conversion failure: %s", err)
 	}
