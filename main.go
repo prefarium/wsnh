@@ -14,7 +14,7 @@ func main() {
 	}
 
 	cmd := command(os.Args[1])
-	ad := CSVAdapter{"./db/entries.csv"}
+	ad := csvAdapter{"./db/entries.csv"}
 
 	if cmd.isStart() {
 		err := startTracking(ad)
