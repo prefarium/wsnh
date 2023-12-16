@@ -66,7 +66,7 @@ func (a CSVAdapter) write(e *entry) error {
 }
 
 func (a CSVAdapter) entryToCSV(e *entry) []string {
-	return []string{e.command.String(), e.timestamp.Format(time.DateTime)}
+	return []string{string(e.command), e.timestamp.Format(time.DateTime)}
 }
 
 func (a CSVAdapter) csvToEntry(line []string) (*entry, error) {
