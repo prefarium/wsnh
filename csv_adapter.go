@@ -14,7 +14,7 @@ type CSVAdapter struct {
 }
 
 func (a CSVAdapter) readLast() (*entry, error) {
-	f, openErr := os.OpenFile(a.csvPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	f, openErr := os.Open(a.csvPath)
 	if openErr != nil {
 		return nil, fmt.Errorf("failed to open csv: %s", openErr)
 	}
@@ -46,6 +46,32 @@ func (a CSVAdapter) readLast() (*entry, error) {
 	}
 
 	return e, nil
+}
+
+func (a CSVAdapter) readAll() ([]*entry, error) {
+	f, openErr := os.Open(a.csvPath)
+	if openErr != nil {
+		return nil, fmt.Errorf("failed to open csv: %s", openErr)
+	}
+	defer f.Close()
+
+	r := csv.NewReader(f)
+	lines, readErr := r.ReadAll()
+	if readErr != nil {
+		return nil, fmt.Errorf("failed to read csv: %s", readErr)
+	}
+
+	entries := make([]*entry, len(lines))
+	for i, line := range lines {
+		timestamp, err := time.Parse(time.RFC822Z, line[1])
+		if err != nil {
+			return entries, fmt.Errorf("csv to entry conversion failure: %s", err)
+		}
+
+		entries[i] = &entry{command(line[0]), timestamp}
+	}
+
+	return entries, nil
 }
 
 func (a CSVAdapter) write(e *entry) error {

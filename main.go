@@ -26,6 +26,13 @@ func main() {
 		if err != nil {
 			fmt.Println(err)
 		}
+	} else if cmd == "today" {
+		workedTime, err := calcToday(ad)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println(workedTime)
+		}
 	} else {
 		fmt.Println("wrong command")
 	}
@@ -61,4 +68,37 @@ func stopTracking(a adapter) error {
 			return nil
 		}
 	}
+}
+
+func calcToday(a adapter) (time.Duration, error) {
+	entries, readErr := a.readAll()
+	if readErr != nil {
+		return 0, readErr
+	}
+
+	tY, tM, tD := time.Now().Date()
+	var lastStart time.Time
+	var workedTime time.Duration
+
+	for _, e := range entries {
+		switch e.command {
+		case CmdStart:
+			y, m, d := e.timestamp.Date()
+			if y == tY && m == tM && d == tD {
+				lastStart = e.timestamp
+			}
+		case CmdStop:
+			if !lastStart.IsZero() {
+				workedTime += e.timestamp.Sub(lastStart)
+				lastStart = time.Time{}
+			}
+		}
+	}
+
+	if !lastStart.IsZero() {
+		workedTime += time.Now().Sub(lastStart)
+		lastStart = time.Time{}
+	}
+
+	return workedTime, nil
 }
