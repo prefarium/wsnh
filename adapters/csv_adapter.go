@@ -1,4 +1,4 @@
-package main
+package adapters
 
 import (
 	"encoding/csv"
@@ -10,25 +10,25 @@ import (
 	"time"
 )
 
-type csvAdapter struct {
-	csvPath string
+type CSVAdapter struct {
+	CSVPath string
 }
 
-func (a csvAdapter) openCSV() (*os.File, error) {
-	f, openErr := os.Open(a.csvPath)
+func (a CSVAdapter) openCSV() (*os.File, error) {
+	f, openErr := os.Open(a.CSVPath)
 
 	if openErr == nil || !os.IsNotExist(openErr) {
 		return f, openErr
 	}
 
-	if errDir := os.MkdirAll(filepath.Dir(a.csvPath), 0777); errDir != nil {
+	if errDir := os.MkdirAll(filepath.Dir(a.CSVPath), 0777); errDir != nil {
 		return nil, errDir
 	}
 
-	return os.OpenFile(a.csvPath, os.O_RDONLY|os.O_CREATE, 0777)
+	return os.OpenFile(a.CSVPath, os.O_RDONLY|os.O_CREATE, 0777)
 }
 
-func (a csvAdapter) readLast() (*entry, error) {
+func (a CSVAdapter) ReadLast() (*Entry, error) {
 	f, openErr := a.openCSV()
 	if openErr != nil {
 		return nil, fmt.Errorf("failed to open csv: %s", openErr)
@@ -63,10 +63,10 @@ func (a csvAdapter) readLast() (*entry, error) {
 	return e, nil
 }
 
-func (a csvAdapter) readAll() ([]*entry, error) {
-	f, openErr := os.Open(a.csvPath)
+func (a CSVAdapter) ReadAll() ([]*Entry, error) {
+	f, openErr := os.Open(a.CSVPath)
 	if os.IsNotExist(openErr) {
-		return make([]*entry, 0), nil
+		return make([]*Entry, 0), nil
 	} else if openErr != nil {
 		return nil, fmt.Errorf("failed to open csv: %s", openErr)
 	}
@@ -78,21 +78,21 @@ func (a csvAdapter) readAll() ([]*entry, error) {
 		return nil, fmt.Errorf("failed to read csv: %s", readErr)
 	}
 
-	entries := make([]*entry, len(lines))
+	entries := make([]*Entry, len(lines))
 	for i, line := range lines {
-		timestamp, err := time.Parse(time.RFC822Z, line[1])
-		if err != nil {
-			return entries, fmt.Errorf("csv to entry conversion failure: %s", err)
+		e, parseErr := a.csvToEntry(line)
+		if parseErr != nil {
+			return entries, parseErr
 		}
 
-		entries[i] = &entry{command(line[0]), timestamp}
+		entries[i] = e
 	}
 
 	return entries, nil
 }
 
-func (a csvAdapter) write(e *entry) error {
-	f, openErr := os.OpenFile(a.csvPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+func (a CSVAdapter) Write(e *Entry) error {
+	f, openErr := os.OpenFile(a.CSVPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if openErr != nil {
 		return fmt.Errorf("failed to open csv: %s", openErr)
 	}
@@ -108,16 +108,16 @@ func (a csvAdapter) write(e *entry) error {
 	}
 }
 
-func (a csvAdapter) entryToCSV(e *entry) []string {
-	return []string{string(e.command), e.timestamp.Format(time.RFC822Z)}
+func (a CSVAdapter) entryToCSV(e *Entry) []string {
+	return []string{e.Kind, e.Timestamp.Format(time.RFC822Z)}
 }
 
-func (a csvAdapter) csvToEntry(line []string) (*entry, error) {
-	cmd := command(line[0])
+func (a CSVAdapter) csvToEntry(line []string) (*Entry, error) {
+	kind := line[0]
 	timestamp, err := time.Parse(time.RFC822Z, line[1])
 	if err != nil {
 		return nil, fmt.Errorf("csv to entry conversion failure: %s", err)
 	}
 
-	return &entry{cmd, timestamp}, err
+	return &Entry{kind, timestamp}, err
 }

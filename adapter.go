@@ -1,7 +1,9 @@
 package main
 
+import "wsnh/adapters"
+
 type adapter interface {
-	readLast() (*entry, error)
-	readAll() ([]*entry, error)
-	write(*entry) error
+	ReadLast() (*adapters.Entry, error)
+	ReadAll() ([]*adapters.Entry, error)
+	Write(*adapters.Entry) error
 }

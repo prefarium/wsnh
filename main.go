@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"wsnh/adapters"
 )
 
 func main() {
@@ -14,7 +15,7 @@ func main() {
 	}
 
 	cmd := command(os.Args[1])
-	ad := csvAdapter{"./db/entries.csv"}
+	ad := adapters.CSVAdapter{CSVPath: "./db/entries.csv"}
 
 	if cmd.isStart() {
 		err := startTracking(ad)
@@ -39,13 +40,14 @@ func main() {
 }
 
 func startTracking(a adapter) error {
-	lastEntry, readErr := a.readLast()
+	lastEntry, readErr := a.ReadLast()
+
 	if readErr != nil {
 		return readErr
-	} else if lastEntry != nil && lastEntry.command.isStart() {
+	} else if lastEntry != nil && command(lastEntry.Kind).isStart() {
 		return errors.New("time is already ticking")
 	} else {
-		writeErr := a.write(&entry{CmdStart, time.Now()})
+		writeErr := a.Write(&adapters.Entry{Kind: CmdStart, Timestamp: time.Now()})
 		if writeErr != nil {
 			return writeErr
 		} else {
@@ -55,13 +57,14 @@ func startTracking(a adapter) error {
 }
 
 func stopTracking(a adapter) error {
-	lastEntry, readErr := a.readLast()
+	lastEntry, readErr := a.ReadLast()
+
 	if readErr != nil {
 		return readErr
-	} else if lastEntry == nil || lastEntry.command.isStop() {
+	} else if lastEntry == nil || command(lastEntry.Kind).isStop() {
 		return errors.New("time is not being tracked")
 	} else {
-		writeErr := a.write(&entry{CmdStop, time.Now()})
+		writeErr := a.Write(&adapters.Entry{Kind: CmdStop, Timestamp: time.Now()})
 		if writeErr != nil {
 			return writeErr
 		} else {
@@ -71,7 +74,7 @@ func stopTracking(a adapter) error {
 }
 
 func calcToday(a adapter) (time.Duration, error) {
-	entries, readErr := a.readAll()
+	entries, readErr := a.ReadAll()
 	if readErr != nil {
 		return 0, readErr
 	}
@@ -81,15 +84,15 @@ func calcToday(a adapter) (time.Duration, error) {
 	var workedTime time.Duration
 
 	for _, e := range entries {
-		switch e.command {
+		switch command(e.Kind) {
 		case CmdStart:
-			y, m, d := e.timestamp.Date()
+			y, m, d := e.Timestamp.Date()
 			if y == tY && m == tM && d == tD {
-				lastStart = e.timestamp
+				lastStart = e.Timestamp
 			}
 		case CmdStop:
 			if !lastStart.IsZero() {
-				workedTime += e.timestamp.Sub(lastStart)
+				workedTime += e.Timestamp.Sub(lastStart)
 				lastStart = time.Time{}
 			}
 		}
