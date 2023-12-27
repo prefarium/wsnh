@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -13,8 +14,22 @@ type csvAdapter struct {
 	csvPath string
 }
 
-func (a csvAdapter) readLast() (*entry, error) {
+func (a csvAdapter) openCSV() (*os.File, error) {
 	f, openErr := os.Open(a.csvPath)
+
+	if openErr == nil || !os.IsNotExist(openErr) {
+		return f, openErr
+	}
+
+	if errDir := os.MkdirAll(filepath.Dir(a.csvPath), 0777); errDir != nil {
+		return nil, errDir
+	}
+
+	return os.OpenFile(a.csvPath, os.O_RDONLY|os.O_CREATE, 0777)
+}
+
+func (a csvAdapter) readLast() (*entry, error) {
+	f, openErr := a.openCSV()
 	if openErr != nil {
 		return nil, fmt.Errorf("failed to open csv: %s", openErr)
 	}
@@ -50,7 +65,9 @@ func (a csvAdapter) readLast() (*entry, error) {
 
 func (a csvAdapter) readAll() ([]*entry, error) {
 	f, openErr := os.Open(a.csvPath)
-	if openErr != nil {
+	if os.IsNotExist(openErr) {
+		return make([]*entry, 0), nil
+	} else if openErr != nil {
 		return nil, fmt.Errorf("failed to open csv: %s", openErr)
 	}
 	defer f.Close()
