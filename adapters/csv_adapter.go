@@ -92,7 +92,7 @@ func (a CSVAdapter) ReadAll() ([]*Entry, error) {
 }
 
 func (a CSVAdapter) Write(e *Entry) error {
-	f, openErr := os.OpenFile(a.CSVPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	f, openErr := os.OpenFile(a.CSVPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0777)
 	if openErr != nil {
 		return fmt.Errorf("failed to open csv: %s", openErr)
 	}
