@@ -33,11 +33,14 @@ func main() {
 
 	if cmd == "today" {
 		workedTime, err := timeWorkedToday(currentAdapter)
+
 		if err != nil {
 			fmt.Println(err)
 		} else {
 			fmt.Println(workedTime)
 		}
+
+		return
 	}
 
 	fmt.Println("wrong command")
