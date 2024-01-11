@@ -10,12 +10,16 @@ import (
 	"time"
 )
 
-const (
-	TimeFormat = time.RFC822Z
-)
-
 type CSVAdapter struct {
-	CSVPath string
+	FilePath   string
+	TimeFormat string
+}
+
+func NewCSVAdapter(filePath string) *CSVAdapter {
+	return &CSVAdapter{
+		FilePath:   filePath,
+		TimeFormat: time.RFC822Z,
+	}
 }
 
 func (a CSVAdapter) ReadLast() (*Entry, error) {
@@ -52,7 +56,7 @@ func (a CSVAdapter) ReadLast() (*Entry, error) {
 }
 
 func (a CSVAdapter) ReadAll() ([]*Entry, error) {
-	f, openErr := os.Open(a.CSVPath)
+	f, openErr := os.Open(a.FilePath)
 
 	if os.IsNotExist(openErr) {
 		return make([]*Entry, 0), nil
@@ -83,7 +87,7 @@ func (a CSVAdapter) ReadAll() ([]*Entry, error) {
 }
 
 func (a CSVAdapter) Write(e *Entry) error {
-	f, openErr := os.OpenFile(a.CSVPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0777)
+	f, openErr := os.OpenFile(a.FilePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0777)
 	if openErr != nil {
 		return fmt.Errorf("failed to open csv: %s", openErr)
 	}
@@ -99,29 +103,29 @@ func (a CSVAdapter) Write(e *Entry) error {
 }
 
 func (a CSVAdapter) openCSV() (*os.File, error) {
-	f, openErr := os.Open(a.CSVPath)
+	f, openErr := os.Open(a.FilePath)
 
 	if openErr == nil || !os.IsNotExist(openErr) {
 		return f, openErr
 	}
 
-	if errDir := os.MkdirAll(filepath.Dir(a.CSVPath), 0777); errDir != nil {
+	if errDir := os.MkdirAll(filepath.Dir(a.FilePath), 0777); errDir != nil {
 		return nil, errDir
 	}
 
-	return os.OpenFile(a.CSVPath, os.O_RDONLY|os.O_CREATE, 0777)
+	return os.OpenFile(a.FilePath, os.O_RDONLY|os.O_CREATE, 0777)
 }
 
 func (a CSVAdapter) entryToCSV(e *Entry) []string {
 	kind := e.Kind
-	timestamp := e.Timestamp.Format(TimeFormat)
+	timestamp := e.Timestamp.Format(a.TimeFormat)
 
 	return []string{kind, timestamp}
 }
 
 func (a CSVAdapter) csvToEntry(line []string) (*Entry, error) {
 	kind := line[0]
-	timestamp, err := time.Parse(TimeFormat, line[1])
+	timestamp, err := time.Parse(a.TimeFormat, line[1])
 
 	if err != nil {
 		return nil, fmt.Errorf("csv to entry conversion failure: %s", err)

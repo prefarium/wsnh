@@ -6,6 +6,13 @@ import (
 	"os"
 	"time"
 	"wsnh/adapters"
+	"wsnh/time_utils"
+)
+
+const (
+	CmdStart = "start"
+	CmdStop  = "stop"
+	CmdToday = "today"
 )
 
 func main() {
@@ -14,25 +21,25 @@ func main() {
 		return
 	}
 
-	cmd := command(os.Args[1])
-	currentAdapter := adapters.CSVAdapter{CSVPath: "./db/entries.csv"}
+	cmd := os.Args[1]
+	a := adapters.NewCSVAdapter("./db/entries.csv")
 
-	if cmd.isStart() {
-		if err := trackTime(currentAdapter); err != nil {
+	if cmd == CmdStart {
+		if err := trackTime(a); err != nil {
 			fmt.Println(err)
 		}
 		return
 	}
 
-	if cmd.isStop() {
-		if err := stopTracking(currentAdapter); err != nil {
+	if cmd == CmdStop {
+		if err := stopTracking(a); err != nil {
 			fmt.Println(err)
 		}
 		return
 	}
 
-	if cmd == "today" {
-		workedTime, err := timeWorkedToday(currentAdapter)
+	if cmd == CmdToday {
+		workedTime, err := timeWorkedToday(a)
 
 		if err != nil {
 			fmt.Println(err)
@@ -52,7 +59,7 @@ func trackTime(a adapter) error {
 		return readErr
 	}
 
-	if lastEntry != nil && command(lastEntry.Kind).isStart() {
+	if lastEntry != nil && lastEntry.Kind == CmdStart {
 		return errors.New("time is already ticking")
 	}
 
@@ -65,7 +72,7 @@ func stopTracking(a adapter) error {
 		return readErr
 	}
 
-	if lastEntry == nil || command(lastEntry.Kind).isStop() {
+	if lastEntry == nil || lastEntry.Kind == CmdStop {
 		return errors.New("time is not being tracked")
 	}
 
@@ -78,15 +85,13 @@ func timeWorkedToday(a adapter) (time.Duration, error) {
 		return 0, readErr
 	}
 
-	tY, tM, tD := time.Now().Date()
 	var lastStart time.Time
 	var workedTime time.Duration
 
 	for _, e := range entries {
-		switch command(e.Kind) {
+		switch e.Kind {
 		case CmdStart:
-			y, m, d := e.Timestamp.Date()
-			if y == tY && m == tM && d == tD {
+			if time_utils.IsToday(e.Timestamp) {
 				lastStart = e.Timestamp
 			}
 		case CmdStop:
