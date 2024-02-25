@@ -20,7 +20,7 @@ func main() {
 		return
 	}
 
-	if output, err := runner.Run(csv.NewAdapter("./db/entries.csv")); err != nil {
+	if output, err := runner.Run(csv.NewAdapter("./db/database.csv")); err != nil {
 		fmt.Println(err)
 	} else if output != "" {
 		fmt.Println(output)
