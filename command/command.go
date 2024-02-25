@@ -2,6 +2,8 @@ package command
 
 import (
 	"errors"
+	"fmt"
+	"time"
 	"wsnh/adapter"
 )
 
@@ -35,4 +37,11 @@ func NewCommand(cmd string) (Command, error) {
 	}
 
 	return Command{}, errors.New("wrong command")
+}
+
+func formatDuration(d time.Duration) string {
+	h := d / time.Hour
+	m := (d - h*time.Hour) / time.Minute
+
+	return fmt.Sprintf("%02dh%02dm", h, m)
 }

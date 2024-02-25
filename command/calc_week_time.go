@@ -36,5 +36,5 @@ func calcWeekTime(ds DataSource) (string, error) {
 		workedTime += time.Now().Sub(lastStart)
 	}
 
-	return workedTime.String(), nil
+	return formatDuration(workedTime), nil
 }
