@@ -21,8 +21,12 @@ type DataSource interface {
 }
 
 type Command struct {
-	repo DataSource
-	Run  func(DataSource) (string, error)
+	Run func(DataSource) (string, error)
+}
+
+type workDay struct {
+	date       time.Time
+	timeWorked time.Duration
 }
 
 func NewCommand(cmd string) (Command, error) {
@@ -34,9 +38,9 @@ func NewCommand(cmd string) (Command, error) {
 		return Command{Run: calcTodayTime}, nil
 	} else if cmd == CmdWeek {
 		return Command{Run: calcWeekTime}, nil
+	} else {
+		return Command{}, errors.New("wrong command")
 	}
-
-	return Command{}, errors.New("wrong command")
 }
 
 func formatDuration(d time.Duration) string {

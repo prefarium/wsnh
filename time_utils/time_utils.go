@@ -17,17 +17,17 @@ func BeginningOfWeek(t time.Time) time.Time {
 		d = int64(wDay) - 1
 	}
 
-	return truncateToDay(t.Add(-time.Duration(d * 24 * int64(time.Hour))))
+	return ToDate(t.Add(-time.Duration(d * 24 * int64(time.Hour))))
 }
 
 func IsSameDay(t1, t2 time.Time) bool {
-	return truncateToDay(t1).Compare(truncateToDay(t2)) == 0
+	return ToDate(t1).Compare(ToDate(t2)) == 0
 }
 
 func IsCovered(t, start, end time.Time) bool {
 	return t.Compare(start) != -1 && t.Compare(end) != 1
 }
 
-func truncateToDay(t time.Time) time.Time {
+func ToDate(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 }

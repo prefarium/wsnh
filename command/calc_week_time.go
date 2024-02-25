@@ -13,11 +13,6 @@ func calcWeekTime(ds DataSource) (string, error) {
 		return "", readErr
 	}
 
-	type workDay struct {
-		weekday    time.Weekday
-		workedTime time.Duration
-	}
-
 	var (
 		timeNow       = time.Now()
 		weekBeginning = time_utils.BeginningOfWeek(timeNow)
@@ -37,8 +32,8 @@ func calcWeekTime(ds DataSource) (string, error) {
 
 				if !lastWorkedDay.IsZero() && !time_utils.IsSameDay(lastWorkedDay, windowStart) {
 					workedByDays = append(workedByDays, &workDay{
-						weekday:    lastWorkedDay.Weekday(),
-						workedTime: workedTime,
+						date:       time_utils.ToDate(lastWorkedDay),
+						timeWorked: workedTime,
 					})
 					workedTime = 0
 				}
@@ -62,13 +57,13 @@ func calcWeekTime(ds DataSource) (string, error) {
 
 	if !lastWorkedDay.IsZero() && !time_utils.IsSameDay(lastWorkedDay, windowStart) {
 		workedByDays = append(workedByDays, &workDay{
-			weekday:    lastWorkedDay.Weekday(),
-			workedTime: workedTime,
+			date:       time_utils.ToDate(lastWorkedDay),
+			timeWorked: workedTime,
 		})
 	}
 
 	for _, d := range workedByDays {
-		output.WriteString(fmt.Sprintf("%s %s\n", formatDuration(d.workedTime), d.weekday))
+		output.WriteString(fmt.Sprintf("%s %s\n", formatDuration(d.timeWorked), d.date.Weekday()))
 	}
 
 	output.WriteString(formatDuration(workedTotal))
