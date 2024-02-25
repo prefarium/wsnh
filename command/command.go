@@ -9,6 +9,7 @@ const (
 	CmdStart = "start"
 	CmdStop  = "stop"
 	CmdToday = "today"
+	CmdWeek  = "week"
 )
 
 type DataSource interface {
@@ -29,6 +30,8 @@ func NewCommand(cmd string) (Command, error) {
 		return Command{Run: stopTracking}, nil
 	} else if cmd == CmdToday {
 		return Command{Run: calcTodayTime}, nil
+	} else if cmd == CmdWeek {
+		return Command{Run: calcWeekTime}, nil
 	}
 
 	return Command{}, errors.New("wrong command")
