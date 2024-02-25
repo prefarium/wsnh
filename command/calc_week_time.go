@@ -1,6 +1,8 @@
 package command
 
 import (
+	"fmt"
+	"strings"
 	"time"
 	"wsnh/time_utils"
 )
@@ -11,30 +13,65 @@ func calcWeekTime(ds DataSource) (string, error) {
 		return "", readErr
 	}
 
+	type workDay struct {
+		weekday    time.Weekday
+		workedTime time.Duration
+	}
+
 	var (
 		timeNow       = time.Now()
 		weekBeginning = time_utils.BeginningOfWeek(timeNow)
-		lastStart     time.Time
+		windowStart   time.Time
+		lastWorkedDay time.Time
 		workedTime    time.Duration
+		workedByDays  = make([]*workDay, 0, 7)
+		output        strings.Builder
+		workedTotal   time.Duration
 	)
 
 	for _, e := range entries {
 		switch e.Kind {
 		case CmdStart:
-			if e.Timestamp.Compare(weekBeginning) != -1 && e.Timestamp.Compare(timeNow) != 1 {
-				lastStart = e.Timestamp
+			if time_utils.IsCovered(e.Timestamp, weekBeginning, timeNow) {
+				windowStart = e.Timestamp
+
+				if !lastWorkedDay.IsZero() && !time_utils.IsSameDay(lastWorkedDay, windowStart) {
+					workedByDays = append(workedByDays, &workDay{
+						weekday:    lastWorkedDay.Weekday(),
+						workedTime: workedTime,
+					})
+					workedTime = 0
+				}
+
+				lastWorkedDay = windowStart
 			}
 		case CmdStop:
-			if !lastStart.IsZero() {
-				workedTime += e.Timestamp.Sub(lastStart)
-				lastStart = time.Time{}
+			if !windowStart.IsZero() {
+				workedInWindow := e.Timestamp.Sub(windowStart)
+				workedTime += workedInWindow
+				workedTotal += workedInWindow
+				windowStart = time.Time{}
 			}
 		}
 	}
 
-	if !lastStart.IsZero() {
-		workedTime += time.Now().Sub(lastStart)
+	if !windowStart.IsZero() {
+		workedTime += timeNow.Sub(windowStart)
+		workedTotal += timeNow.Sub(windowStart)
 	}
 
-	return formatDuration(workedTime), nil
+	if !lastWorkedDay.IsZero() && !time_utils.IsSameDay(lastWorkedDay, windowStart) {
+		workedByDays = append(workedByDays, &workDay{
+			weekday:    lastWorkedDay.Weekday(),
+			workedTime: workedTime,
+		})
+	}
+
+	for _, d := range workedByDays {
+		output.WriteString(fmt.Sprintf("%s %s\n", formatDuration(d.workedTime), d.weekday))
+	}
+
+	output.WriteString(formatDuration(workedTotal))
+
+	return output.String(), nil
 }

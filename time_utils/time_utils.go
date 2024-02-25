@@ -20,6 +20,14 @@ func BeginningOfWeek(t time.Time) time.Time {
 	return truncateToDay(t.Add(-time.Duration(d * 24 * int64(time.Hour))))
 }
 
+func IsSameDay(t1, t2 time.Time) bool {
+	return truncateToDay(t1).Compare(truncateToDay(t2)) == 0
+}
+
+func IsCovered(t, start, end time.Time) bool {
+	return t.Compare(start) != -1 && t.Compare(end) != 1
+}
+
 func truncateToDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 }
